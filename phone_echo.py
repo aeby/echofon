@@ -5,6 +5,7 @@ import decimal
 import json
 import os
 from boto3.dynamodb.conditions import Key
+from urllib.parse import parse_qs
 
 from twilio.twiml.voice_response import VoiceResponse
 
@@ -49,12 +50,12 @@ def echo_handler(event, ctx):
             response.record(max_length=5)
     elif operation == 'POST':
         # Save recording url and timestamp for calling number
-        data = json.loads(event['body'])
+        data = parse_qs(event['body'])
         table.put_item(
             Item={
-                'phone': data['From'],
+                'phone': data['From'][0],
                 'ts': int(time.time()),
-                'rec': data['RecordingUrl']
+                'rec': data['RecordingUrl'][0]
             }
         )
 
