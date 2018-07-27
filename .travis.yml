@@ -1,0 +1,19 @@
+language: python
+python:
+  - "3.6"
+script:
+  - pytest
+deploy:
+  provider: lambda
+  access_key_id: $AWS_ACCESS_KEY_ID
+  secret_access_key: $AWS_SECRET_ACCESS_KEY
+  role: $AWS_ROLE
+  region: $AWS_REGION
+  handler_name: echo_handler
+  module_name: phone_echo
+  function_name: call_echo
+  runtime: python3.6
+  publish: true
+  skip_cleanup: true
+  on:
+    branch: master
