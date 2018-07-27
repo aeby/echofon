@@ -28,13 +28,13 @@ def echo_handler(event, ctx):
         # Check if we have a recording in the past 10s from the calling number
         phone = event['queryStringParameters']['From']
         rec_ts = int(time.time()) - 10
-        response = table.query(
+        result = table.query(
             ProjectionExpression='phone, ts, rec',
             KeyConditionExpression=Key('phone').eq(phone) & Key('ts').gte(rec_ts)
         )
-        if len(response['Items']):
+        if len(result['Items']):
             response.say('Playing your recorded message')
-            response.play(response['Items'][0]['rec'])
+            response.play(result['Items'][0]['rec'])
             response.say(
                 'If you are able hear your own voice, the Caru phone is working correctly. '
                 'If you hear this message but not your own voice then something is wrong with the audio settings. '
