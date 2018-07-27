@@ -1,3 +1,6 @@
+import os
+import time
+
 import boto3
 import decimal
 import json
@@ -13,16 +16,8 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(o)
 
 
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table('recording')
-
-response = table.query(
-    ProjectionExpression='phone, ts, recording',
-    KeyConditionExpression=Key('phone').eq('+4146545546')
-)
-
-for i in response['Items']:
-    print(json.dumps(i, cls=DecimalEncoder))
+dynamo_db = boto3.resource('dynamodb')
+table = dynamo_db.Table(os.environ.get('RECORDING_TABLE'))
 
 
 def echo_handler(event, ctx):
@@ -31,9 +26,15 @@ def echo_handler(event, ctx):
 
     if operation == 'GET':
         # Check if we have a recording in the past 10s from the calling number
-        if False:
+        phone = event['queryStringParameters']['From']
+        rec_ts = int(time.time()) - 10
+        response = table.query(
+            ProjectionExpression='phone, ts, rec',
+            KeyConditionExpression=Key('phone').eq(phone) & Key('ts').gte(rec_ts)
+        )
+        if len(response['Items']):
             response.say('Playing your recorded message')
-            response.play('https://api.twilio.com/cowbell.mp3')
+            response.play(response['Items'][0]['rec'])
             response.say(
                 'If you are able hear your own voice, the Caru phone is working correctly. '
                 'If you hear this message but not your own voice then something is wrong with the audio settings. '
@@ -47,12 +48,15 @@ def echo_handler(event, ctx):
             # This calls this URL with a POST request
             response.record(max_length=5)
     elif operation == 'POST':
-        # Save recording url for calling number
+        # Save recording url and timestamp for calling number
         data = json.loads(event['body'])
-        recording = data['RecordingUrl']
-        caller = data['From']
-
-        pass
+        table.put_item(
+            Item={
+                'phone': data['From'],
+                'ts': int(time.time()),
+                'rec': data['RecordingUrl']
+            }
+        )
 
     response.hangup()
     return str(response)
