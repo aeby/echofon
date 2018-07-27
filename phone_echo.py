@@ -1,11 +1,20 @@
 import boto3
+import decimal
 import json
 from boto3.dynamodb.conditions import Key
 
 from twilio.twiml.voice_response import VoiceResponse
 
-dynamo = boto3.client('dynamodb')
-table = dynamo.Table('recording')
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        return super(DecimalEncoder, self).default(o)
+
+
+dynamodb = boto3.resource('dynamodb')
+table = dynamodb.Table('recording')
 
 response = table.query(
     ProjectionExpression='phone, ts, recording',
@@ -13,7 +22,7 @@ response = table.query(
 )
 
 for i in response['Items']:
-    print(json.dumps(i))
+    print(json.dumps(i, cls=DecimalEncoder))
 
 
 def echo_handler(event, ctx):
