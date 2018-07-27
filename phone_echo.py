@@ -1,9 +1,9 @@
-import os
 import time
 
 import boto3
 import decimal
 import json
+import os
 from boto3.dynamodb.conditions import Key
 
 from twilio.twiml.voice_response import VoiceResponse
@@ -59,4 +59,11 @@ def echo_handler(event, ctx):
         )
 
     response.hangup()
-    return str(response)
+
+    return {
+        'statusCode': '200',
+        'body': str(response),
+        'headers': {
+            'Content-Type': 'application/xml'
+        }
+    }
